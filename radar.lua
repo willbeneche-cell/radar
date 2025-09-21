@@ -19,18 +19,10 @@ local function Radar(state)
     local RunService = game:GetService("RunService")
     local UserInputService = game:GetService("UserInputService")
 
-    local RadarInfo = {
-        Position = Vector2.new(200, 200),
-        Radius = 100,
-        Scale = 1,
-        RadarBack = Color3.fromRGB(10, 10, 10),
-        RadarBorder = Color3.fromRGB(75, 75, 75),
-        LocalPlayerDot = Color3.fromRGB(255, 255, 255),
-        PlayerDot = Color3.fromRGB(60, 170, 255),
-        Team = Color3.fromRGB(0, 255, 0),
-        Enemy = Color3.fromRGB(255, 0, 0),
-        Team_Check = true
-    }
+    repeat wait() until Player.Character and Player.Character.PrimaryPart
+
+    local LerpColorModule = loadstring(game:HttpGet("https://pastebin.com/raw/wRnsJeid"))()
+    local HealthBarLerp = LerpColorModule:Lerp(Color3.fromRGB(255, 0, 0), Color3.fromRGB(0, 255, 0))
 
     local function NewCircle(Transparency, Color, Radius, Filled, Thickness)
         local c = Drawing.new("Circle")
@@ -44,6 +36,20 @@ local function Radar(state)
         c.Filled = Filled
         return c
     end
+
+    local RadarInfo = {
+        Position = Vector2.new(200, 200),
+        Radius = 100,
+        Scale = 1,
+        RadarBack = Color3.fromRGB(10, 10, 10),
+        RadarBorder = Color3.fromRGB(75, 75, 75),
+        LocalPlayerDot = Color3.fromRGB(255, 255, 255),
+        PlayerDot = Color3.fromRGB(60, 170, 255),
+        Team = Color3.fromRGB(0, 255, 0),
+        Enemy = Color3.fromRGB(255, 0, 0),
+        Health_Color = true,
+        Team_Check = true
+    }
 
     local RadarBackground = NewCircle(0.9, RadarInfo.RadarBack, RadarInfo.Radius, true, 1)
     RadarBackground.Visible = true
@@ -73,7 +79,8 @@ local function Radar(state)
             local connection
             connection = RunService.RenderStepped:Connect(function()
                 local char = plr.Character
-                if char and char:FindFirstChild("Humanoid") and char.PrimaryPart and char:FindFirstChild("Humanoid").Health > 0 then
+                if char and char:FindFirstChildOfClass("Humanoid") and char.PrimaryPart and char:FindFirstChildOfClass("Humanoid").Health > 0 then
+                    local hum = char:FindFirstChildOfClass("Humanoid")
                     local scale = RadarInfo.Scale
                     local relx, rely = GetRelative(char.PrimaryPart.Position)
                     local newpos = RadarInfo.Position - Vector2.new(relx * scale, rely * scale)
@@ -98,6 +105,10 @@ local function Radar(state)
                             PlayerDot.Color = RadarInfo.Enemy
                         end
                     end
+
+                    if RadarInfo.Health_Color then
+                        PlayerDot.Color = HealthBarLerp(hum.Health / hum.MaxHealth)
+                    end
                 else
                     PlayerDot.Visible = false
                     if not Players:FindFirstChild(plr.Name) then
@@ -117,11 +128,70 @@ local function Radar(state)
         end
     end
 
+    local function NewLocalDot()
+        local d = Drawing.new("Triangle")
+        d.Visible = true
+        d.Thickness = 1
+        d.Filled = true
+        d.Color = RadarInfo.LocalPlayerDot
+        d.PointA = RadarInfo.Position + Vector2.new(0, -6)
+        d.PointB = RadarInfo.Position + Vector2.new(-3, 6)
+        d.PointC = RadarInfo.Position + Vector2.new(3, 6)
+        return d
+    end
+
+    local LocalPlayerDot = NewLocalDot()
+
     Players.PlayerAdded:Connect(function(v)
         if v.Name ~= Player.Name then
             PlaceDot(v)
         end
+        LocalPlayerDot:Remove()
+        LocalPlayerDot = NewLocalDot()
     end)
+
+    coroutine.wrap(function()
+        RunService.RenderStepped:Connect(function()
+            if LocalPlayerDot then
+                LocalPlayerDot.Color = RadarInfo.LocalPlayerDot
+                LocalPlayerDot.PointA = RadarInfo.Position + Vector2.new(0, -6)
+                LocalPlayerDot.PointB = RadarInfo.Position + Vector2.new(-3, 6)
+                LocalPlayerDot.PointC = RadarInfo.Position + Vector2.new(3, 6)
+            end
+            RadarBackground.Position = RadarInfo.Position
+            RadarBackground.Radius = RadarInfo.Radius
+            RadarBackground.Color = RadarInfo.RadarBack
+
+            RadarBorder.Position = RadarInfo.Position
+            RadarBorder.Radius = RadarInfo.Radius
+            RadarBorder.Color = RadarInfo.RadarBorder
+        end)
+    end)()
+
+    local inset = game:GetService("GuiService"):GetGuiInset()
+    local dragging = false
+    local offset = Vector2.new(0, 0)
+
+    UserInputService.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 and (Vector2.new(Mouse.X, Mouse.Y + inset.Y) - RadarInfo.Position).magnitude < RadarInfo.Radius then
+            offset = RadarInfo.Position - Vector2.new(Mouse.X, Mouse.Y)
+            dragging = true
+        end
+    end)
+
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+
+    coroutine.wrap(function()
+        RunService.RenderStepped:Connect(function()
+            if dragging then
+                RadarInfo.Position = Vector2.new(Mouse.X, Mouse.Y) + offset
+            end
+        end)
+    end)()
 end
 
 return Radar
