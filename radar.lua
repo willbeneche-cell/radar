@@ -42,13 +42,13 @@ local function Radar(state)
         Radius = 100,
         Scale = 1,
         RadarBack = Color3.fromRGB(10, 10, 10),
-        RadarBorder = Color3.fromRGB(75, 75, 75),
+        RadarBorder = Color3.fromRGB(3, 143, 254),
         LocalPlayerDot = Color3.fromRGB(255, 255, 255),
         PlayerDot = Color3.fromRGB(60, 170, 255),
-        Team = Color3.fromRGB(0, 255, 0),
-        Enemy = Color3.fromRGB(255, 0, 0),
-        Health_Color = true,
-        Team_Check = true
+        Team = Color3.fromRGB(3, 143, 254),
+        Enemy = Color3.fromRGB(3, 143, 254),
+        Health_Color = false,
+        Team_Check = false
     }
 
     local RadarBackground = NewCircle(0.9, RadarInfo.RadarBack, RadarInfo.Radius, true, 1)
